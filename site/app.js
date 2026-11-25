@@ -157,9 +157,9 @@ function renderRun(run, totalCount, jobsData) {
   elements.runCount.textContent = `${totalCount} ${totalCount === 1 ? "Trainingslauf" : "Trainingsläufe"}`;
   if (!run) {
     elements.runStatus.textContent = "Noch kein Lauf";
-    elements.runDetail.textContent = "Automatischer Start täglich um 03:00 UTC";
+    elements.runDetail.textContent = "Automatischer Start alle 6 Stunden";
     elements.activityTitle.textContent = "Noch kein Trainingslauf";
-    elements.activityDescription.textContent = "Der Zeitplan startet den nächsten Lauf automatisch.";
+    elements.activityDescription.textContent = "Der Zeitplan startet die nächste Trainingsrunde automatisch.";
     elements.activityIndicator.className = "activity-indicator idle";
     elements.runNumber.textContent = "—";
     renderSteps(null, jobsData);

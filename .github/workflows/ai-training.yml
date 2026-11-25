@@ -9,11 +9,15 @@ on:
       - "KiLernprojekt/**/*.cs"
       - ".github/workflows/ai-training.yml"
   schedule:
-    - cron: "0 3 * * *"
+    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: ai-training
+  cancel-in-progress: false
 
 jobs:
   train:
@@ -31,6 +35,21 @@ jobs:
 
       - name: Build model trainer
         run: dotnet build KiTrain/KiTrain.csproj
+
+      - name: Restore previous model checkpoint
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')"
+          if [ -z "$tag" ]; then
+            echo "No previous release found; starting the initial training."
+          else
+            gh release download "$tag" \
+              --pattern eigene-gewichte.json \
+              --dir KiLernprojekt \
+              --repo "$GITHUB_REPOSITORY"
+          fi
 
       - name: Train from project files
         run: dotnet run --project KiTrain/KiTrain.csproj --no-build

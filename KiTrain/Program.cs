@@ -10,6 +10,15 @@ string[] labels =
 ];
 
 IntentNetwork network = new(labels);
+string outputDirectory = GetKiLernprojektDirectory();
+Directory.CreateDirectory(outputDirectory);
+string weightsPath = Path.Combine(outputDirectory, "eigene-gewichte.json");
+
+if (File.Exists(weightsPath))
+{
+    network.Load(weightsPath);
+    Console.WriteLine("Vorherigen Modell-Checkpoint geladen.");
+}
 
 Dictionary<string, string[]> trainingData = new()
 {
@@ -54,9 +63,7 @@ foreach (string sourceFile in Directory.EnumerateFiles(
     }
 }
 
-string outputDirectory = GetKiLernprojektDirectory();
-Directory.CreateDirectory(outputDirectory);
-network.Save(Path.Combine(outputDirectory, "eigene-gewichte.json"));
+network.Save(weightsPath);
 Console.WriteLine("Eigenes Modelltraining abgeschlossen.");
 
 static string GetKiLernprojektDirectory()
