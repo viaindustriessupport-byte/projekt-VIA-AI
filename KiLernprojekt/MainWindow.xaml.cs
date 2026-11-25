@@ -33,8 +33,19 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         intentNetwork = new IntentNetwork(
-            ["begruessung", "identitaet", "faehigkeiten", "hilfe", "status"]);
-        intentNetwork.Load(System.IO.Path.Combine(
+        [
+            "begruessung",
+            "identitaet",
+            "faehigkeiten",
+            "hilfe",
+            "status",
+            "programmieren",
+            "bildanalyse",
+            "bildgenerierung",
+            "danken",
+            "verabschiedung",
+        ]);
+        bool modelLoaded = intentNetwork.Load(System.IO.Path.Combine(
             AppContext.BaseDirectory,
             "eigene-gewichte.json"));
 
@@ -45,7 +56,9 @@ public partial class MainWindow : Window
 
         LadeWissen();
         Loaded += async (_, _) => await SyncGewichteBeimStartAsync();
-        ChatHinzu("KI", "Lokale Demo bereit. Noch kein Sprachmodell geladen.");
+        ChatHinzu("KI", modelLoaded
+            ? "Lokale Demo bereit. Das mehrschichtige Absichtsmodell ist geladen."
+            : "Lokale Demo bereit. Das gespeicherte Modell ist nicht kompatibel und muss neu trainiert werden.");
 
         trayIcon = new NotifyIcon
         {
@@ -109,13 +122,14 @@ public partial class MainWindow : Window
             string gewichteDatei =
                 System.IO.Path.Combine(AppContext.BaseDirectory, "eigene-gewichte.json");
             string? version = await syncService.SyncAsync(manifestUrl, gewichteDatei);
-            intentNetwork.Load(gewichteDatei);
+            bool modelLoaded = intentNetwork.Load(gewichteDatei);
 
             StatusText.Text = gpu.IsCuda
                 ? $"GPU aktiv: {gpu.DeviceName}"
                 : $"GPU: {gpu.DeviceName}";
-            ChatHinzu("KI",
-                string.IsNullOrEmpty(version)
+            ChatHinzu("KI", !modelLoaded
+                ? "Das Cloud-Modell nutzt ein älteres Format. Bitte warte auf einen neuen Trainingslauf."
+                : string.IsNullOrEmpty(version)
                     ? "Gewichte wurden aktualisiert."
                     : $"Gewichte aktualisiert: Version {version}");
         }
@@ -300,6 +314,26 @@ public partial class MainWindow : Window
         if (intent == "hilfe")
         {
             return "Nutze Chat für Fragen oder Code für das Coding-Interface.";
+        }
+        if (intent == "programmieren")
+        {
+            return "Ich erkenne eine Programmieraufgabe, kann aber noch keinen geprüften Code generieren.";
+        }
+        if (intent == "bildanalyse")
+        {
+            return "Ich erkenne den Wunsch nach Bildanalyse, kann aktuell aber keine Bilder verarbeiten.";
+        }
+        if (intent == "bildgenerierung")
+        {
+            return "Ich erkenne den Wunsch nach einem Bild, kann aktuell aber keine Bilder erzeugen.";
+        }
+        if (intent == "danken")
+        {
+            return "Gern geschehen!";
+        }
+        if (intent == "verabschiedung")
+        {
+            return "Bis bald!";
         }
 
         return "Das habe ich noch nicht gelernt. Nutze die Schaltfläche Lernen.";

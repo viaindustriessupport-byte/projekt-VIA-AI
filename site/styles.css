@@ -264,3 +264,107 @@ body {
   .score-note { grid-column: 1; }
   .training-card, .network-card { padding: 17px; }
 }
+
+.network-scroll {
+  overscroll-behavior-x: contain;
+  scrollbar-color: rgba(98, 217, 232, .45) rgba(148, 163, 184, .1);
+  -webkit-overflow-scrolling: touch;
+}
+.network-svg { min-width: 700px; }
+.network-node.hidden1 { fill: #213b55; stroke: #56b5ce; stroke-width: 1; }
+.network-node.hidden2 { fill: #30284f; stroke: #a899ff; stroke-width: 1; }
+.network-node.hidden1.active { fill: #56b5ce; stroke: #d3fbff; }
+.network-node.hidden2.active { fill: #a899ff; stroke: #eee8ff; }
+.legend-dot.hidden-dot { background: #a899ff; }
+.mobile-network-hint { display: none; }
+.button, .test-form textarea { min-height: 44px; }
+.test-form textarea { font-size: 16px; }
+
+@media (max-width: 640px) {
+  .shell { padding: 0 14px; }
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    height: auto;
+    gap: 10px 12px;
+    padding: 11px 0;
+  }
+  .brand { grid-column: 1; grid-row: 1; }
+  .topbar > .button {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 8px 11px;
+    font-size: 11px;
+  }
+  nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    height: auto;
+    overflow: visible;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-link {
+    justify-content: center;
+    min-height: 40px;
+    border: 0;
+    border-radius: 7px;
+    font-size: 11px;
+  }
+  .nav-link:hover, .nav-link.active {
+    border: 0;
+    background: rgba(98, 217, 232, .08);
+  }
+  .hero { min-height: 0; }
+  .hero-copy { padding: 32px 0; }
+  .hero-art { display: none; }
+  h1 { font-size: 44px; }
+  .hero-copy > p { max-width: 100%; font-size: 13px; }
+  .hero-actions { flex-wrap: wrap; }
+  .access-note { max-width: none; font-size: 10px; }
+  .status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    padding: 14px 0;
+  }
+  .status-card { min-width: 0; min-height: 112px; padding: 14px; }
+  .status-card:last-child { grid-column: 1 / -1; }
+  .metric {
+    overflow: visible;
+    font-size: 15px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .submetric { font-size: 10px; }
+  .dashboard-grid { gap: 12px; }
+  .training-card, .network-card { padding: 15px; }
+  .section-heading { align-items: flex-start; gap: 8px; }
+  .section-heading .button { flex: 0 0 auto; padding: 8px 10px; font-size: 11px; }
+  .activity-panel { padding: 13px; }
+  .activity-line { align-items: flex-start; gap: 8px; }
+  .activity-copy strong { font-size: 12px; }
+  .run-number, .version-chip { padding: 5px 7px; font-size: 9px; }
+  .progress-meta { font-size: 9px; }
+  .step-list { grid-template-columns: 1fr; }
+  .training-actions { align-items: flex-start; flex-direction: column; }
+  .network-scroll { margin: 0 -2px; }
+  .network-svg { width: 700px; min-width: 700px; }
+  .mobile-network-hint {
+    display: block;
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 10px;
+  }
+  .playground-card { gap: 16px; padding: 16px; }
+  .playground-intro h2 { font-size: 22px; }
+  .test-form textarea { min-height: 120px; }
+  .test-controls { align-items: stretch; flex-wrap: wrap; }
+  .test-controls .button { width: 100%; }
+  .test-result { gap: 12px; padding: 13px; }
+  .score-item { grid-template-columns: minmax(72px, .7fr) minmax(45px, 1fr) 40px; gap: 7px; }
+  footer { align-items: flex-start; flex-direction: column; padding: 14px 0; }
+}

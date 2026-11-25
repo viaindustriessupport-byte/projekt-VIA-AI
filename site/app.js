@@ -3,7 +3,9 @@ const repository = "projekt-VIA-AI";
 const api = `https://api.github.com/repos/${owner}/${repository}`;
 const workflowUrl = `${api}/actions/workflows/ai-training.yml/runs?per_page=1`;
 const releasesUrl = `${api}/releases/latest`;
-const featureCount = 256;
+const inputFeatureCount = 256;
+const hidden1Count = 32;
+const hidden2Count = 16;
 
 const labelNames = {
   begruessung: "Begrüßung",
@@ -11,6 +13,11 @@ const labelNames = {
   faehigkeiten: "Fähigkeiten",
   hilfe: "Hilfe",
   status: "Status",
+  programmieren: "Programmieren",
+  bildanalyse: "Bildanalyse",
+  bildgenerierung: "Bildwunsch",
+  danken: "Dank",
+  verabschiedung: "Abschied",
 };
 
 const stepNames = {
@@ -43,6 +50,7 @@ const elements = {
   stepList: document.querySelector("#step-list"),
   networkSvg: document.querySelector("#network-svg"),
   networkVersion: document.querySelector("#network-version"),
+  modelDescription: document.querySelector("#model-description"),
   modelLoadStatus: document.querySelector("#model-load-status"),
   testForm: document.querySelector("#test-form"),
   testInput: document.querySelector("#test-input"),
@@ -244,21 +252,72 @@ function renderRelease(release) {
 
 function validateModel(data) {
   const labels = data.Labels || data.labels;
+  if (!Array.isArray(labels) ||
+      labels.length === 0 ||
+      labels.some((label) => typeof label !== "string" || label.length === 0) ||
+      new Set(labels).size !== labels.length) {
+    throw new Error("Modell enthält keine gültigen Klassen.");
+  }
+
+  if ((data.Version ?? data.version) === 2) {
+    const inputCount = data.InputCount ?? data.inputCount;
+    const firstHiddenCount = data.Hidden1Count ?? data.hidden1Count;
+    const secondHiddenCount = data.Hidden2Count ?? data.hidden2Count;
+    const inputWeights = data.InputWeights || data.inputWeights;
+    const hidden1Biases = data.Hidden1Biases || data.hidden1Biases;
+    const hiddenWeights = data.HiddenWeights || data.hiddenWeights;
+    const hiddenBiases = data.HiddenBiases || data.hiddenBiases;
+    const outputWeights = data.OutputWeights || data.outputWeights;
+    const outputBiases = data.OutputBiases || data.outputBiases;
+
+    if (inputCount !== inputFeatureCount ||
+        firstHiddenCount !== hidden1Count ||
+        secondHiddenCount !== hidden2Count) {
+      throw new Error("Die Architektur des Cloud-Modells wird nicht unterstützt.");
+    }
+
+    const arrays = [
+      [inputWeights, firstHiddenCount * inputCount],
+      [hidden1Biases, firstHiddenCount],
+      [hiddenWeights, secondHiddenCount * firstHiddenCount],
+      [hiddenBiases, secondHiddenCount],
+      [outputWeights, labels.length * secondHiddenCount],
+      [outputBiases, labels.length],
+    ];
+    if (arrays.some(([values, length]) =>
+      !Array.isArray(values) ||
+      values.length !== length ||
+      !values.every(Number.isFinite),
+    )) {
+      throw new Error("Modellgewichte fehlen oder sind ungültig.");
+    }
+
+    return {
+      version: 2,
+      labels,
+      inputCount,
+      hidden1Count: firstHiddenCount,
+      hidden2Count: secondHiddenCount,
+      inputWeights,
+      hidden1Biases,
+      hiddenWeights,
+      hiddenBiases,
+      outputWeights,
+      outputBiases,
+    };
+  }
+
   const rows = data.Rows ?? data.rows;
   const columns = data.Columns ?? data.columns;
   const weights = data.Weights || data.weights;
-
-  if (!Array.isArray(labels) || labels.length === 0) {
-    throw new Error("Modell enthält keine gültigen Klassen.");
-  }
-  if (rows !== labels.length || columns !== featureCount) {
+  if (rows !== labels.length || columns !== inputFeatureCount) {
     throw new Error("Modellformat passt nicht zur erwarteten Architektur.");
   }
   if (!Array.isArray(weights) || weights.length !== rows * columns || !weights.every(Number.isFinite)) {
     throw new Error("Modellgewichte fehlen oder sind ungültig.");
   }
 
-  return { labels, rows, columns, weights };
+  return { version: 1, labels, rows, columns, weights };
 }
 
 async function loadModel(release) {
@@ -273,31 +332,48 @@ async function loadModel(release) {
     return null;
   }
 
-  if (model && loadedModelUrl === asset.browser_download_url) return null;
+  const tag = release.tag_name;
+  if (!tag) {
+    model = null;
+    elements.testButton.disabled = true;
+    elements.modelLoadStatus.textContent = "Das Modell-Release hat keinen gültigen Versionsnamen.";
+    elements.modelLoadStatus.className = "load-status error";
+    return "Das Release enthält keinen gültigen Versionsnamen.";
+  }
+  const modelUrl = `/api/model?tag=${encodeURIComponent(tag)}`;
+  if (model && loadedModelUrl === modelUrl) return null;
 
   elements.modelLoadStatus.textContent = "Cloud-Modell wird geladen…";
   elements.modelLoadStatus.className = "load-status";
   elements.testButton.disabled = true;
 
   try {
-    const response = await fetch(asset.browser_download_url);
+    const response = await fetch(modelUrl, {
+      headers: { Accept: "application/json" },
+    });
     if (!response.ok) {
-      throw new Error(`Modell-Download antwortet mit HTTP ${response.status}`);
+      let detail = "";
+      try {
+        detail = (await response.json()).error || "";
+      } catch {
+        detail = "";
+      }
+      throw new Error(detail || `Modell-Download antwortet mit HTTP ${response.status}`);
     }
     const nextModel = validateModel(await response.json());
     model = nextModel;
-    loadedModelUrl = asset.browser_download_url;
+    loadedModelUrl = modelUrl;
     elements.testButton.disabled = false;
     elements.modelLoadStatus.textContent = "Modell bereit · Texte werden nur lokal ausgewertet";
     elements.modelLoadStatus.className = "load-status ready";
-    renderNetwork(model.labels);
+    renderNetwork(model.labels, model.version);
     return null;
   } catch (error) {
     model = null;
     elements.testButton.disabled = true;
-    elements.modelLoadStatus.textContent = "Modell konnte nicht geladen werden.";
+    elements.modelLoadStatus.textContent = `Modell konnte nicht geladen werden: ${error.message}`;
     elements.modelLoadStatus.className = "load-status error";
-    renderNetwork([]);
+    renderNetwork([], 2);
     return error.message;
   }
 }
@@ -307,32 +383,93 @@ function hashFeature(text) {
   for (let index = 0; index < text.length; index += 1) {
     hash = (Math.imul(hash, 31) + text.charCodeAt(index)) | 0;
   }
-  return (hash & 0x7fffffff) % featureCount;
+  return (hash & 0x7fffffff) % inputFeatureCount;
 }
 
 function extractFeatures(text) {
   const normalized = ` ${text.trim().toLowerCase()} `;
-  const features = new Float64Array(featureCount);
+  const features = new Float64Array(inputFeatureCount);
 
   for (let index = 0; index < normalized.length - 1; index += 1) {
-    features[hashFeature(normalized.substring(index, index + 2))] += 1;
+    features[hashFeature(normalized.substring(index, index + 2)) % inputFeatureCount] += 1;
   }
   for (let index = 0; index < normalized.length - 2; index += 1) {
-    features[hashFeature(normalized.substring(index, index + 3))] += 0.5;
+    features[hashFeature(normalized.substring(index, index + 3)) % inputFeatureCount] += 0.5;
+  }
+
+  const norm = Math.sqrt(features.reduce((sum, value) => sum + value * value, 0));
+  if (norm > 0) {
+    for (let index = 0; index < features.length; index += 1) {
+      features[index] /= norm;
+    }
   }
   return features;
 }
 
+function activateDense(inputs, weights, biases, rows, columns) {
+  const outputs = new Float64Array(rows);
+  for (let row = 0; row < rows; row += 1) {
+    let value = biases[row];
+    const offset = row * columns;
+    for (let column = 0; column < columns; column += 1) {
+      value += weights[offset + column] * inputs[column];
+    }
+    outputs[row] = Math.tanh(value);
+  }
+  return outputs;
+}
+
+function scoreOutputs(inputs, weights, biases, rows, columns) {
+  const scores = new Float64Array(rows);
+  for (let row = 0; row < rows; row += 1) {
+    let score = biases[row];
+    const offset = row * columns;
+    for (let column = 0; column < columns; column += 1) {
+      score += weights[offset + column] * inputs[column];
+    }
+    scores[row] = score;
+  }
+  return scores;
+}
+
 function predict(text) {
   const features = extractFeatures(text);
-  const scores = model.labels.map((_, row) => {
-    let score = 0;
-    const offset = row * model.columns;
-    for (let column = 0; column < model.columns; column += 1) {
-      score += model.weights[offset + column] * features[column];
-    }
-    return score;
-  });
+  let hidden1 = [];
+  let hidden2 = [];
+  let scores;
+
+  if (model.version === 1) {
+    scores = model.labels.map((_, row) => {
+      let score = 0;
+      const offset = row * model.columns;
+      for (let column = 0; column < model.columns; column += 1) {
+        score += model.weights[offset + column] * features[column];
+      }
+      return score;
+    });
+  } else {
+    hidden1 = activateDense(
+      features,
+      model.inputWeights,
+      model.hidden1Biases,
+      model.hidden1Count,
+      model.inputCount,
+    );
+    hidden2 = activateDense(
+      hidden1,
+      model.hiddenWeights,
+      model.hiddenBiases,
+      model.hidden2Count,
+      model.hidden1Count,
+    );
+    scores = scoreOutputs(
+      hidden2,
+      model.outputWeights,
+      model.outputBiases,
+      model.labels.length,
+      model.hidden2Count,
+    );
+  }
 
   const maxScore = Math.max(...scores);
   const exponentials = scores.map((score) => Math.exp(score - maxScore));
@@ -344,6 +481,8 @@ function predict(text) {
 
   return {
     features,
+    hidden1,
+    hidden2,
     label: model.labels[scores.indexOf(maxScore)],
     results,
   };
@@ -357,91 +496,161 @@ function createSvgElement(name, attributes = {}) {
   return element;
 }
 
-function renderNetwork(labels) {
+function layerPositions(count) {
+  const first = 62;
+  const last = 390;
+  if (count === 1) return [Math.round((first + last) / 2)];
+  return Array.from({ length: count }, (_, index) =>
+    first + (index * (last - first)) / (count - 1),
+  );
+}
+
+function renderNetwork(labels, version = model?.version) {
   elements.networkSvg.replaceChildren();
   networkNodes = [];
   networkEdges = [];
   outputNodes = [];
 
+  const visibleLabels = labels.length ? labels : Object.keys(labelNames);
+  const deepNetwork = version !== 1;
+  const layers = deepNetwork
+    ? [
+      { key: "input", title: `${inputFeatureCount} Merkmale`, x: 42, count: 32 },
+      { key: "hidden1", title: `${hidden1Count} Neuronen`, x: 260, count: hidden1Count },
+      { key: "hidden2", title: `${hidden2Count} Neuronen`, x: 480, count: hidden2Count },
+      { key: "output", title: `${visibleLabels.length} Absichten`, x: 670, count: visibleLabels.length },
+    ]
+    : [
+      { key: "input", title: `${inputFeatureCount} Merkmale`, x: 42, count: 32 },
+      { key: "output", title: `${visibleLabels.length} Absichten`, x: 670, count: visibleLabels.length },
+    ];
+
   const title = createSvgElement("title");
-  title.textContent = `Neuronales Netzwerk: ${featureCount} Eingangsmerkmale und ${labels.length || 5} Absichtsklassen`;
+  title.textContent = deepNetwork
+    ? `Mehrschichtiges neuronales Netzwerk: ${inputFeatureCount} Eingänge, ${hidden1Count} und ${hidden2Count} verborgene Neuronen, ${visibleLabels.length} Absichten`
+    : `Lineare Modellversion: ${inputFeatureCount} Eingangsmerkmale und ${visibleLabels.length} Absichten`;
   elements.networkSvg.append(title);
 
-  const inputTitle = createSvgElement("text", { x: 42, y: 30, class: "layer-title" });
-  inputTitle.textContent = `${featureCount} Merkmale`;
-  const outputTitle = createSvgElement("text", { x: 648, y: 30, class: "layer-title" });
-  outputTitle.textContent = `${labels.length || 5} Absichten`;
-  elements.networkSvg.append(inputTitle, outputTitle);
+  if (elements.modelDescription) {
+    elements.modelDescription.textContent = deepNetwork
+      ? "Mehrschichtiges Netz: 256 Texteingänge → 32 → 16 Neuronen → 10 Absichten. Es ordnet Texte ein, erzeugt aber keine Antworten oder Bilder."
+      : "Dieses ältere Modell ordnet 256 Textmerkmale direkt fünf Absichten zu. Der nächste Trainingslauf erstellt das mehrschichtige Netz.";
+  }
 
-  const visibleLabels = labels.length ? labels : Object.keys(labelNames);
-  const outputYs = visibleLabels.map((_, index) => 61 + ((index + 1) * 205) / (visibleLabels.length + 1));
-  const inputs = Array.from({ length: featureCount }, (_, index) => ({
-    x: 42 + (index % 16) * 8,
-    y: 54 + Math.floor(index / 16) * 8,
-  }));
+  const nodesByLayer = new Map();
+  for (const layer of layers) {
+    const positions = layerPositions(layer.count);
+    const group = createSvgElement("g", { "aria-hidden": layer.key === "output" ? "false" : "true" });
+    const heading = createSvgElement("text", {
+      x: layer.x - 12,
+      y: 32,
+      class: "layer-title",
+    });
+    heading.textContent = layer.title;
+    elements.networkSvg.append(heading);
+
+    const nodes = [];
+    for (let index = 0; index < layer.count; index += 1) {
+      const node = createSvgElement("circle", {
+        cx: layer.x,
+        cy: positions[index],
+        r: layer.key === "output" ? 6 : layer.key === "input" ? 3 : 4,
+        class: `network-node ${layer.key}`,
+      });
+      const details = {
+        element: node,
+        layer: layer.key,
+        index,
+      };
+
+      if (layer.key === "input") {
+        details.featureStart = Math.floor((index * inputFeatureCount) / layer.count);
+        details.featureEnd = Math.floor(((index + 1) * inputFeatureCount) / layer.count);
+      }
+
+      nodes.push(details);
+      networkNodes.push(details);
+      group.append(node);
+
+      if (layer.key === "output") {
+        const label = createSvgElement("text", {
+          x: layer.x + 14,
+          y: positions[index] + 3,
+          class: "output-label",
+        });
+        label.textContent = displayLabel(visibleLabels[index]);
+        group.append(label);
+        outputNodes.push(node);
+      }
+    }
+
+    nodesByLayer.set(layer.key, nodes);
+    elements.networkSvg.append(group);
+  }
 
   const edgeGroup = createSvgElement("g", { "aria-hidden": "true" });
-  for (let feature = 0; feature < inputs.length; feature += 1) {
-    for (let output = 0; output < outputYs.length; output += 1) {
-      const edge = createSvgElement("line", {
-        x1: inputs[feature].x + 2.5,
-        y1: inputs[feature].y,
-        x2: 628,
-        y2: outputYs[output],
-        class: "network-edge",
-      });
-      networkEdges.push({ element: edge, feature, output });
-      edgeGroup.append(edge);
+  for (let layerIndex = 0; layerIndex < layers.length - 1; layerIndex += 1) {
+    const sourceLayer = layers[layerIndex];
+    const targetLayer = layers[layerIndex + 1];
+    const sourceNodes = nodesByLayer.get(sourceLayer.key);
+    const targetNodes = nodesByLayer.get(targetLayer.key);
+
+    for (const source of sourceNodes) {
+      for (const target of targetNodes) {
+        const edge = createSvgElement("line", {
+          x1: sourceLayer.x + 5,
+          y1: Number(source.element.getAttribute("cy")),
+          x2: targetLayer.x - 7,
+          y2: Number(target.element.getAttribute("cy")),
+          class: "network-edge",
+        });
+        networkEdges.push({
+          element: edge,
+          sourceLayer: source.layer,
+          sourceIndex: source.index,
+          targetLayer: target.layer,
+          targetIndex: target.index,
+        });
+        edgeGroup.append(edge);
+      }
     }
   }
-  elements.networkSvg.append(edgeGroup);
 
-  const inputGroup = createSvgElement("g", { "aria-hidden": "true" });
-  for (let feature = 0; feature < inputs.length; feature += 1) {
-    const node = createSvgElement("circle", {
-      cx: inputs[feature].x,
-      cy: inputs[feature].y,
-      r: 2.5,
-      class: "network-node input",
-    });
-    networkNodes.push(node);
-    inputGroup.append(node);
-  }
-  elements.networkSvg.append(inputGroup);
-
-  const outputGroup = createSvgElement("g");
-  visibleLabels.forEach((label, index) => {
-    const node = createSvgElement("circle", {
-      cx: 642,
-      cy: outputYs[index],
-      r: 8,
-      class: "network-node output",
-    });
-    const text = createSvgElement("text", {
-      x: 660,
-      y: outputYs[index] + 4,
-      class: "output-label",
-    });
-    text.textContent = displayLabel(label);
-    outputNodes.push(node);
-    outputGroup.append(node, text);
-  });
-  elements.networkSvg.append(outputGroup);
+  elements.networkSvg.prepend(edgeGroup);
 }
 
-function activateNetwork(features, winningLabel) {
-  const active = new Set();
-  for (let index = 0; index < features.length; index += 1) {
-    if (features[index] > 0) active.add(index);
-  }
+function activateNetwork(result) {
+  const winningIndex = model.labels.indexOf(result.label);
+  const activeNodes = new Set();
 
-  networkNodes.forEach((node, index) => node.classList.toggle("active", active.has(index)));
-  const winningIndex = model.labels.indexOf(winningLabel);
-  outputNodes.forEach((node, index) => node.classList.toggle("winner", index === winningIndex));
-  networkEdges.forEach(({ element, feature, output }) => {
-    const isActive = active.has(feature);
-    element.classList.toggle("is-active", isActive);
-    element.classList.toggle("is-winning", isActive && output === winningIndex);
+  networkNodes.forEach(({ element, layer, index, featureStart, featureEnd }) => {
+    let active = false;
+    if (layer === "input") {
+      for (let feature = featureStart; feature < featureEnd; feature += 1) {
+        if (result.features[feature] > 0) {
+          active = true;
+          break;
+        }
+      }
+    } else if (layer === "hidden1") {
+      active = Math.abs(result.hidden1[index]) > 0.1;
+    } else if (layer === "hidden2") {
+      active = Math.abs(result.hidden2[index]) > 0.1;
+    } else if (layer === "output") {
+      active = index === winningIndex;
+      element.classList.toggle("winner", active);
+    }
+
+    element.classList.toggle("active", active);
+    if (active) activeNodes.add(`${layer}:${index}`);
+  });
+
+  networkEdges.forEach(({ element, sourceLayer, sourceIndex, targetLayer, targetIndex }) => {
+    const sourceActive = activeNodes.has(`${sourceLayer}:${sourceIndex}`);
+    const targetActive = activeNodes.has(`${targetLayer}:${targetIndex}`);
+    const winningEdge = targetLayer === "output" && targetIndex === winningIndex;
+    element.classList.toggle("is-active", sourceActive && targetActive);
+    element.classList.toggle("is-winning", sourceActive && winningEdge);
   });
 }
 
@@ -471,7 +680,7 @@ function renderPrediction(result) {
     elements.scoreList.append(row);
   }
 
-  activateNetwork(result.features, result.label);
+  activateNetwork(result);
 }
 
 function setNoRelease() {

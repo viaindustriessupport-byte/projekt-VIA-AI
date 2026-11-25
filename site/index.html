@@ -23,7 +23,7 @@
         <a class="nav-link" href="#test">Test</a>
       </nav>
       <a class="button button-quiet" href="https://github.com/viaindustriessupport-byte/projekt-VIA-AI" target="_blank" rel="noopener noreferrer">
-        GitHub-Projekt <span aria-hidden="true">↗</span>
+        GitHub <span aria-hidden="true">↗</span>
       </a>
     </header>
 
@@ -112,15 +112,17 @@
             </div>
             <span id="network-version" class="version-chip">Lädt…</span>
           </div>
-          <p class="model-description">Eine lineare Klassifikation: 256 Zeichenmerkmale werden gewichtet und einer von fünf Absichten zugeordnet.</p>
-          <div class="network-scroll">
-            <svg id="network-svg" class="network-svg" viewBox="0 0 820 300" role="img" aria-label="256 Eingangsmerkmale sind mit fünf Ausgabe-Neuronen verbunden"></svg>
+          <p id="model-description" class="model-description">Mehrschichtiges Netz: 256 Texteingänge werden durch zwei verborgene Schichten verarbeitet und zehn Absichten zugeordnet.</p>
+          <div class="network-scroll" tabindex="0" aria-label="Netzwerkdiagramm; auf kleinen Bildschirmen horizontal verschiebbar">
+            <svg id="network-svg" class="network-svg" viewBox="0 0 900 420" role="img" aria-label="Neuronales Netzwerk mit Eingabe, verborgenen Schichten und Absichten"></svg>
           </div>
+          <p class="mobile-network-hint">Auf dem Handy seitlich wischen, um alle Schichten zu sehen.</p>
           <div class="network-legend">
-            <span><i class="legend-dot input-dot"></i>256 Zeichenmerkmale</span>
-            <span><i class="legend-dot output-dot"></i>5 Absichten</span>
+            <span><i class="legend-dot input-dot"></i>Eingabe</span>
+            <span><i class="legend-dot hidden-dot"></i>Verarbeitung</span>
+            <span><i class="legend-dot output-dot"></i>Absichten</span>
           </div>
-          <p class="network-note">Die Darstellung zeigt die gespeicherte Architektur; beim Test werden aktive Merkmale und die Vorhersage hervorgehoben.</p>
+          <p class="network-note">Schematische Darstellung der Architektur. Beim Test werden aktive Merkmale und die Vorhersage hervorgehoben. Die Absichten zu Bildern sind nur Texteinteilungen, keine Bildanalyse oder -erzeugung.</p>
         </article>
       </section>
 
