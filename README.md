@@ -18,8 +18,15 @@ Beim App-Start liest die Anwendung `KiLernprojekt\sync-config.json`, lädt das M
 
 Kostenlose GitHub-Runner sind zeit- und ressourcenbegrenzt. Das tägliche Training ist kein kontinuierliches Lernen und macht das Modell nicht zu einem allgemeinen Sprachmodell.
 
-## Öffentliches Status-Dashboard
+## Öffentliches Status-Dashboard und Cloudflare
 
-`site/` enthält ein öffentlich lesbares Dashboard. Es bezieht Trainingsläufe und Releases über die öffentliche GitHub-API; es speichert keine Zugangsdaten. Das Training selbst lässt sich nur über GitHub Actions nach Anmeldung starten.
+`site/` enthält ein öffentlich lesbares Dashboard. Es bezieht Trainingsläufe und Releases über die öffentliche GitHub-API, aktualisiert die Anzeige alle fünf Minuten und speichert keine Zugangsdaten. Das Training läuft täglich sowie nach Änderungen an Trainer- oder C#-Quelldateien. Manuelles Starten ist über den Button **Training verwalten** möglich und erfordert eine GitHub-Anmeldung.
 
-Nach dem Push in `main` stellt `.github/workflows/deploy-dashboard.yml` die Website mit GitHub Pages bereit. Falls Pages noch nicht aktiviert ist, öffne **Settings → Pages** und setze **Build and deployment → Source** auf **GitHub Actions**. Danach ist die Website unter `https://viaindustriessupport-byte.github.io/projekt-VIA-AI/` erreichbar.
+Die Bereitstellung nach Cloudflare Pages läuft über `.github/workflows/deploy-dashboard.yml`. Für die erstmalige Einrichtung:
+
+1. Erstelle in Cloudflare unter **Workers & Pages** ein Pages-Projekt als **Direct Upload** mit dem Projektnamen `via-ai-training-dashboard`.
+2. Erstelle einen Cloudflare API-Token mit der Berechtigung **Account → Cloudflare Pages → Edit**.
+3. Lege im GitHub-Repository unter **Settings → Secrets and variables → Actions** zwei Repository-Secrets an: `CLOUDFLARE_API_TOKEN` (der Token) und `CLOUDFLARE_ACCOUNT_ID` (die Account-ID aus dem Cloudflare-Dashboard).
+4. Push auf `main` oder starte **Deploy public status dashboard to Cloudflare** unter GitHub Actions.
+
+Die Dashboard-Adresse ist `https://via-ai-training-dashboard.pages.dev`. Die Trainingsläufe selbst laufen weiterhin auf GitHub Actions (CPU); Cloudflare hostet die Anzeige und führt kein Modelltraining aus.

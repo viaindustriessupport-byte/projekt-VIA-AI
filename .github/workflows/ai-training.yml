@@ -1,6 +1,13 @@
 name: Train and publish own AI model
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "KiTrain/**"
+      - "KiLernprojekt/**/*.cs"
+      - ".github/workflows/ai-training.yml"
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
