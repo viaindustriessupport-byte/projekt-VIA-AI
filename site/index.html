@@ -19,7 +19,8 @@
       <nav aria-label="Hauptnavigation">
         <a class="nav-link active" href="#overview">Übersicht</a>
         <a class="nav-link" href="#training">Training</a>
-        <a class="nav-link" href="#model">Modell</a>
+        <a class="nav-link" href="#network">Netzwerk</a>
+        <a class="nav-link" href="#test">Test</a>
       </nav>
       <a class="button button-quiet" href="https://github.com/viaindustriessupport-byte/projekt-VIA-AI" target="_blank" rel="noopener noreferrer">
         GitHub-Projekt <span aria-hidden="true">↗</span>
@@ -29,14 +30,14 @@
     <main>
       <section class="hero" id="overview">
         <div class="hero-copy">
-          <div class="eyebrow"><span class="pulse-dot"></span> EIGENES LERNPROJEKT</div>
+          <div class="eyebrow"><span class="pulse-dot"></span> DEIN KI-LABOR · CLOUD-STATUS</div>
           <h1>VIA <span>AI</span></h1>
-          <p>Trainingsstatus, Modellversion und Fortschritt – transparent und öffentlich einsehbar.</p>
+          <p>Sieh den Trainingslauf Schritt für Schritt, erkunde das Netzwerk und teste die aktuelle Modellversion direkt im Browser.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="https://github.com/viaindustriessupport-byte/projekt-VIA-AI/actions/workflows/ai-training.yml" target="_blank" rel="noopener noreferrer">
-              Training verwalten <span aria-hidden="true">↗</span>
+              Training starten <span aria-hidden="true">↗</span>
             </a>
-            <span class="access-note">Starten erfordert GitHub-Anmeldung</span>
+            <span class="access-note">GitHub-Anmeldung erforderlich</span>
           </div>
         </div>
         <div class="hero-art" aria-hidden="true">
@@ -47,41 +48,50 @@
         </div>
       </section>
 
-      <section class="status-grid" aria-label="Aktueller Status">
+      <section class="status-grid" aria-label="Projektübersicht">
         <article class="card status-card">
-          <div class="card-heading"><span class="icon icon-run">↻</span><span>LETZTER TRAININGSLauf</span></div>
+          <div class="card-heading"><span class="icon icon-run">↻</span><span>TRAINING</span></div>
           <strong id="run-status" class="metric">Lade Status…</strong>
           <span id="run-detail" class="submetric">Verbinde mit GitHub Actions</span>
         </article>
         <article class="card status-card">
           <div class="card-heading"><span class="icon icon-model">◈</span><span>MODELLVERSION</span></div>
           <strong id="model-version" class="metric">Noch keine Cloud-Version</strong>
-          <span id="model-detail" class="submetric">Warte auf den ersten Release</span>
+          <span id="model-detail" class="submetric">Lade Release-Status…</span>
         </article>
         <article class="card status-card">
           <div class="card-heading"><span class="icon icon-schedule">◷</span><span>ZEITPLAN</span></div>
           <strong class="metric">Täglich + bei Code-Änderungen</strong>
-          <span class="submetric">03:00 UTC · GitHub CPU-Runner</span>
+          <span class="submetric">03:00 UTC · GitHub-CPU</span>
         </article>
       </section>
 
-      <section class="content-grid" id="training">
+      <section class="dashboard-grid" id="training">
         <article class="card training-card">
           <div class="section-heading">
             <div>
               <div class="eyebrow">CLOUD-TRAINING</div>
-              <h2>Trainingsaktivität</h2>
+              <h2>Trainingsfortschritt</h2>
             </div>
             <button id="refresh-button" class="button button-quiet" type="button">Aktualisieren</button>
           </div>
           <div class="activity-panel">
             <div class="activity-line">
               <span id="activity-indicator" class="activity-indicator idle"></span>
-              <div>
+              <div class="activity-copy">
                 <strong id="activity-title">Noch kein Lauf gefunden</strong>
-                <p id="activity-description">Der Trainingsworkflow läuft täglich und kann in GitHub manuell gestartet werden.</p>
+                <p id="activity-description">Der Trainingsstatus wird von GitHub Actions geladen.</p>
               </div>
+              <span id="run-number" class="run-number">—</span>
             </div>
+            <div class="progress-meta">
+              <span id="current-step">Warte auf Trainingsschritte</span>
+              <strong id="progress-count">0%</strong>
+            </div>
+            <div class="progress-track" role="progressbar" aria-label="Trainingsfortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <ol id="step-list" class="step-list" aria-label="Trainingsschritte"></ol>
             <div class="activity-meta">
               <span id="run-count">0 Trainingsläufe</span>
               <span id="last-updated">Status wird geladen</span>
@@ -89,26 +99,57 @@
           </div>
           <p id="api-error" class="notice" role="status" hidden></p>
           <div class="training-actions">
-            <a class="text-link" href="https://github.com/viaindustriessupport-byte/projekt-VIA-AI/actions/workflows/ai-training.yml" target="_blank" rel="noopener noreferrer">Workflow öffnen <span aria-hidden="true">↗</span></a>
+            <a class="text-link" href="https://github.com/viaindustriessupport-byte/projekt-VIA-AI/actions/workflows/ai-training.yml" target="_blank" rel="noopener noreferrer">Workflow-Details in GitHub <span aria-hidden="true">↗</span></a>
             <span class="submetric">Automatische Aktualisierung alle 5 Minuten</span>
           </div>
         </article>
 
-        <article class="card model-card" id="model">
-          <div class="eyebrow">WAS LÄUFT GERADE?</div>
-          <h2>Modell-Übersicht</h2>
-          <p class="model-description">Eine kleine, selbst geschriebene C#-Absichtsklassifikation. Sie lernt einfache Kategorien – kein großes Sprachmodell und noch kein freier Coding-Chat.</p>
-          <div class="model-facts">
-            <div><span>Merkmale</span><strong>256 Zeichen-N-Gramme</strong></div>
-            <div><span>Absichtsklassen</span><strong>5</strong></div>
-            <div><span>Trainingsdaten</span><strong>Beispiele + C#-Projekt</strong></div>
-            <div><span>Rechenleistung</span><strong>GitHub CPU-Runner</strong></div>
+        <article class="card network-card" id="network">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">MODELLARCHITEKTUR</div>
+              <h2>Neuronales Netzwerk</h2>
+            </div>
+            <span id="network-version" class="version-chip">Lädt…</span>
           </div>
-          <div class="privacy-note">
-            <span class="privacy-icon">i</span>
-            <p>Gehostet auf Cloudflare Pages und öffentlich lesbar. Training startet automatisch täglich oder bei Code-Änderungen; manuell nur nach GitHub-Anmeldung.</p>
+          <p class="model-description">Eine lineare Klassifikation: 256 Zeichenmerkmale werden gewichtet und einer von fünf Absichten zugeordnet.</p>
+          <div class="network-scroll">
+            <svg id="network-svg" class="network-svg" viewBox="0 0 820 300" role="img" aria-label="256 Eingangsmerkmale sind mit fünf Ausgabe-Neuronen verbunden"></svg>
           </div>
+          <div class="network-legend">
+            <span><i class="legend-dot input-dot"></i>256 Zeichenmerkmale</span>
+            <span><i class="legend-dot output-dot"></i>5 Absichten</span>
+          </div>
+          <p class="network-note">Die Darstellung zeigt die gespeicherte Architektur; beim Test werden aktive Merkmale und die Vorhersage hervorgehoben.</p>
         </article>
+      </section>
+
+      <section class="card playground-card" id="test">
+        <div class="playground-intro">
+          <div class="eyebrow">MODELL AUSPROBIEREN</div>
+          <h2>Schreib der KI</h2>
+          <p>Gib einen Satz ein. Das geladene Modell sagt voraus, welche Absicht es erkennt. Dein Text wird nur in diesem Browser ausgewertet.</p>
+          <div id="model-load-status" class="load-status" role="status">Cloud-Modell wird geladen…</div>
+        </div>
+        <form id="test-form" class="test-form">
+          <label for="test-input">Deine Nachricht</label>
+          <textarea id="test-input" name="test-input" maxlength="500" placeholder="Zum Beispiel: Hallo, was kannst du?" required></textarea>
+          <div class="test-controls">
+            <span id="character-count">0 / 500</span>
+            <button id="test-button" class="button button-primary" type="submit" disabled>Vorhersage testen</button>
+          </div>
+          <p id="test-error" class="notice" role="alert" hidden></p>
+        </form>
+        <div class="test-result" aria-live="polite">
+          <div class="result-heading">
+            <span>ERKANNTE ABSICHT</span>
+            <strong id="prediction-label">Noch kein Test</strong>
+          </div>
+          <div id="score-list" class="score-list">
+            <p class="empty-result">Schreib einen Satz und teste das geladene Modell.</p>
+          </div>
+          <p class="score-note">Die Balken zeigen relative Modellwerte, keine geprüfte Sicherheit und keine generierte Antwort.</p>
+        </div>
       </section>
     </main>
 

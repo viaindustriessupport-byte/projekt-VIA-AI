@@ -22,11 +22,6 @@ Kostenlose GitHub-Runner sind zeit- und ressourcenbegrenzt. Das tägliche Traini
 
 `site/` enthält ein öffentlich lesbares Dashboard. Es bezieht Trainingsläufe und Releases über die öffentliche GitHub-API, aktualisiert die Anzeige alle fünf Minuten und speichert keine Zugangsdaten. Das Training läuft täglich sowie nach Änderungen an Trainer- oder C#-Quelldateien. Manuelles Starten ist über den Button **Training verwalten** möglich und erfordert eine GitHub-Anmeldung.
 
-Die Bereitstellung nach Cloudflare Pages läuft über `.github/workflows/deploy-dashboard.yml`. Für die erstmalige Einrichtung:
-
-1. Erstelle in Cloudflare unter **Workers & Pages** ein Pages-Projekt als **Direct Upload** mit dem Projektnamen `via-ai-training-dashboard`.
-2. Erstelle einen Cloudflare API-Token mit der Berechtigung **Account → Cloudflare Pages → Edit**.
-3. Lege im GitHub-Repository unter **Settings → Secrets and variables → Actions** zwei Repository-Secrets an: `CLOUDFLARE_API_TOKEN` (der Token) und `CLOUDFLARE_ACCOUNT_ID` (die Account-ID aus dem Cloudflare-Dashboard).
-4. Push auf `main` oder starte **Deploy public status dashboard to Cloudflare** unter GitHub Actions.
+Cloudflare Pages ist mit diesem GitHub-Repository verbunden und veröffentlicht Commits auf `main` automatisch. Das Projekt verwendet keinen Build-Befehl und veröffentlicht den Ordner `site/`; dafür sind keine API-Tokens oder GitHub-Secrets erforderlich.
 
 Die Dashboard-Adresse ist `https://via-ai-training-dashboard.pages.dev`. Die Trainingsläufe selbst laufen weiterhin auf GitHub Actions (CPU); Cloudflare hostet die Anzeige und führt kein Modelltraining aus.
